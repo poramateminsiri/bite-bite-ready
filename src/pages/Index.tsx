@@ -4,14 +4,26 @@ import { MenuItem } from "@/components/MenuItem";
 import { Cart } from "@/components/Cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart } from "lucide-react";
-import { menuItems } from "@/data/menuData";
-import type { CartItem, MenuCategory } from "@/types/menu";
-import { toast } from "sonner";
+import { ShoppingCart, Loader2, AlertCircle } from "lucide-react";
+import { useMenu } from "@/contexts/MenuContext";
+import { useCart } from "@/contexts/CartContext";
+import type { MenuCategory } from "@/types/menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Index = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // Use context hooks
+  const { menuItems, isLoading, isError, error } = useMenu();
+  const {
+    cartItems,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    cartItemCount,
+    isCartOpen,
+    openCart,
+    closeCart,
+  } = useCart();
+
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | "all">("all");
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -23,45 +35,10 @@ const Index = () => {
     { value: "drink", label: "Drinks" },
   ];
 
-  const filteredItems = selectedCategory === "all" 
-    ? menuItems 
+  // Filter items by category
+  const filteredItems = selectedCategory === "all"
+    ? menuItems
     : menuItems.filter(item => item.category === selectedCategory);
-
-  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  const handleAddToCart = (item: typeof menuItems[0]) => {
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-        );
-      }
-      return [...prev, { ...item, quantity: 1 }];
-    });
-    toast.success(`Added ${item.name} to cart`);
-  };
-
-  const handleUpdateQuantity = (id: string, delta: number) => {
-    setCartItems((prev) => {
-      const item = prev.find((i) => i.id === id);
-      if (!item) return prev;
-      
-      const newQuantity = item.quantity + delta;
-      if (newQuantity <= 0) {
-        return prev.filter((i) => i.id !== id);
-      }
-      
-      return prev.map((i) =>
-        i.id === id ? { ...i, quantity: newQuantity } : i
-      );
-    });
-  };
-
-  const handleRemove = (id: string) => {
-    setCartItems((prev) => prev.filter((i) => i.id !== id));
-    toast.info("Item removed from cart");
-  };
 
   const scrollToMenu = () => {
     menuRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,7 +57,7 @@ const Index = () => {
             variant="outline"
             size="sm"
             className="relative gap-2"
-            onClick={() => setIsCartOpen(true)}
+            onClick={openCart}
           >
             <ShoppingCart className="h-4 w-4" />
             Cart
@@ -121,21 +98,48 @@ const Index = () => {
           ))}
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading menu...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <Alert variant="destructive" className="mb-8">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error?.message || "Failed to load menu items. Please try again later."}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Menu Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
-            <MenuItem key={item.id} item={item} onAddToCart={handleAddToCart} />
-          ))}
-        </div>
+        {!isLoading && !isError && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item) => (
+                <MenuItem key={item.id} item={item} onAddToCart={addToCart} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">No items found in this category.</p>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Cart Drawer */}
       <Cart
         isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+        onClose={closeCart}
         items={cartItems}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemove={handleRemove}
+        onUpdateQuantity={updateQuantity}
+        onRemove={removeFromCart}
       />
     </div>
   );
