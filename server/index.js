@@ -28,6 +28,7 @@ const allowedOrigins = [
   'http://localhost:5173',  // Default Vite port
   'http://localhost:8080',  // Configured Vite port
   'http://localhost:8081',  // Alternative port
+  'http://localhost:8082',  // Alternative port
   process.env.FRONTEND_URL  // Environment variable override
 ].filter(Boolean);
 

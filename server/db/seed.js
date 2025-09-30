@@ -14,7 +14,7 @@ const menuData = [
     description: "Hand-rolled spring rolls with fresh vegetables and sweet chili sauce",
     price: 8.99,
     category: "appetizer",
-    image: "/src/assets/spring-rolls.jpg",
+    image: "/images/spring-rolls.jpg",
     popular: 1,
   },
   {
@@ -23,7 +23,7 @@ const menuData = [
     description: "Creamy wild mushroom soup with truffle oil and herbs",
     price: 9.99,
     category: "appetizer",
-    image: "/src/assets/mushroom-soup.jpg",
+    image: "/images/mushroom-soup.jpg",
     popular: 0,
   },
   {
@@ -32,7 +32,7 @@ const menuData = [
     description: "Atlantic salmon with lemon butter sauce, asparagus, and roasted potatoes",
     price: 24.99,
     category: "main",
-    image: "/src/assets/grilled-salmon.jpg",
+    image: "/images/grilled-salmon.jpg",
     popular: 1,
   },
   {
@@ -41,7 +41,7 @@ const menuData = [
     description: "Premium wagyu patty with aged cheddar, caramelized onions, and truffle aioli",
     price: 18.99,
     category: "main",
-    image: "/src/assets/wagyu-burger.jpg",
+    image: "/images/wagyu-burger.jpg",
     popular: 1,
   },
   {
@@ -50,7 +50,7 @@ const menuData = [
     description: "Classic Italian pizza with fresh mozzarella, basil, and San Marzano tomatoes",
     price: 16.99,
     category: "main",
-    image: "/src/assets/margherita-pizza.jpg",
+    image: "/images/margherita-pizza.jpg",
     popular: 0,
   },
   {
@@ -59,7 +59,7 @@ const menuData = [
     description: "Aromatic green curry with chicken, bamboo shoots, and jasmine rice",
     price: 15.99,
     category: "main",
-    image: "/src/assets/green-curry.jpg",
+    image: "/images/green-curry.jpg",
     popular: 0,
   },
   {
@@ -68,7 +68,7 @@ const menuData = [
     description: "Warm chocolate cake with a molten center, vanilla ice cream",
     price: 8.99,
     category: "dessert",
-    image: "/src/assets/lava-cake.jpg",
+    image: "/images/lava-cake.jpg",
     popular: 1,
   },
   {
@@ -77,7 +77,7 @@ const menuData = [
     description: "Classic Italian dessert with espresso-soaked ladyfingers and mascarpone",
     price: 7.99,
     category: "dessert",
-    image: "/src/assets/tiramisu.jpg",
+    image: "/images/tiramisu.jpg",
     popular: 0,
   },
   {
@@ -86,7 +86,7 @@ const menuData = [
     description: "Blended mango with coconut milk and a hint of lime",
     price: 6.99,
     category: "drink",
-    image: "/src/assets/mango-smoothie.jpg",
+    image: "/images/mango-smoothie.jpg",
     popular: 0,
   },
   {
@@ -95,7 +95,7 @@ const menuData = [
     description: "Premium matcha green tea with oat milk and honey",
     price: 5.99,
     category: "drink",
-    image: "/src/assets/matcha-latte.jpg",
+    image: "/images/matcha-latte.jpg",
     popular: 0,
   },
 ];
