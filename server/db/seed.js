@@ -6,6 +6,7 @@
 const { getDatabase } = require('./init');
 
 // Menu data extracted from frontend menuData.ts
+// Using Vite asset paths that match the actual file locations
 const menuData = [
   {
     id: "1",
@@ -13,7 +14,7 @@ const menuData = [
     description: "Hand-rolled spring rolls with fresh vegetables and sweet chili sauce",
     price: 8.99,
     category: "appetizer",
-    image: "spring-rolls.jpg",
+    image: "/src/assets/spring-rolls.jpg",
     popular: 1,
   },
   {
@@ -22,7 +23,7 @@ const menuData = [
     description: "Creamy wild mushroom soup with truffle oil and herbs",
     price: 9.99,
     category: "appetizer",
-    image: "mushroom-soup.jpg",
+    image: "/src/assets/mushroom-soup.jpg",
     popular: 0,
   },
   {
@@ -31,7 +32,7 @@ const menuData = [
     description: "Atlantic salmon with lemon butter sauce, asparagus, and roasted potatoes",
     price: 24.99,
     category: "main",
-    image: "grilled-salmon.jpg",
+    image: "/src/assets/grilled-salmon.jpg",
     popular: 1,
   },
   {
@@ -40,7 +41,7 @@ const menuData = [
     description: "Premium wagyu patty with aged cheddar, caramelized onions, and truffle aioli",
     price: 18.99,
     category: "main",
-    image: "wagyu-burger.jpg",
+    image: "/src/assets/wagyu-burger.jpg",
     popular: 1,
   },
   {
@@ -49,7 +50,7 @@ const menuData = [
     description: "Classic Italian pizza with fresh mozzarella, basil, and San Marzano tomatoes",
     price: 16.99,
     category: "main",
-    image: "margherita-pizza.jpg",
+    image: "/src/assets/margherita-pizza.jpg",
     popular: 0,
   },
   {
@@ -58,7 +59,7 @@ const menuData = [
     description: "Aromatic green curry with chicken, bamboo shoots, and jasmine rice",
     price: 15.99,
     category: "main",
-    image: "green-curry.jpg",
+    image: "/src/assets/green-curry.jpg",
     popular: 0,
   },
   {
@@ -67,7 +68,7 @@ const menuData = [
     description: "Warm chocolate cake with a molten center, vanilla ice cream",
     price: 8.99,
     category: "dessert",
-    image: "lava-cake.jpg",
+    image: "/src/assets/lava-cake.jpg",
     popular: 1,
   },
   {
@@ -76,7 +77,7 @@ const menuData = [
     description: "Classic Italian dessert with espresso-soaked ladyfingers and mascarpone",
     price: 7.99,
     category: "dessert",
-    image: "tiramisu.jpg",
+    image: "/src/assets/tiramisu.jpg",
     popular: 0,
   },
   {
@@ -85,7 +86,7 @@ const menuData = [
     description: "Blended mango with coconut milk and a hint of lime",
     price: 6.99,
     category: "drink",
-    image: "mango-smoothie.jpg",
+    image: "/src/assets/mango-smoothie.jpg",
     popular: 0,
   },
   {
@@ -94,7 +95,7 @@ const menuData = [
     description: "Premium matcha green tea with oat milk and honey",
     price: 5.99,
     category: "drink",
-    image: "matcha-latte.jpg",
+    image: "/src/assets/matcha-latte.jpg",
     popular: 0,
   },
 ];

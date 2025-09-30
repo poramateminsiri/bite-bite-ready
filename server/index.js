@@ -23,12 +23,32 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+// Allow multiple frontend origins for development
+const allowedOrigins = [
+  'http://localhost:5173',  // Default Vite port
+  'http://localhost:8080',  // Configured Vite port
+  'http://localhost:8081',  // Alternative port
+  process.env.FRONTEND_URL  // Environment variable override
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the 'public' directory
+app.use(express.static('public'));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -48,6 +68,23 @@ try {
 }
 
 // ==================== API ROUTES ====================
+
+const addFullImagePath = (req, itemOrItems) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  if (Array.isArray(itemOrItems)) {
+    return itemOrItems.map(item => ({
+      ...item,
+      image: item.image.startsWith('http') ? item.image : `${baseUrl}${item.image}`
+    }));
+  }
+  if (itemOrItems) {
+    return {
+      ...itemOrItems,
+      image: itemOrItems.image.startsWith('http') ? itemOrItems.image : `${baseUrl}${itemOrItems.image}`
+    };
+  }
+  return itemOrItems;
+};
 
 /**
  * Health check endpoint
@@ -69,7 +106,7 @@ app.get('/api/menu', (req, res) => {
     const items = getAllMenuItems();
     res.json({
       success: true,
-      data: items,
+      data: addFullImagePath(req, items),
       count: items.length
     });
   } catch (error) {
@@ -90,7 +127,7 @@ app.get('/api/menu/popular', (req, res) => {
     const items = getPopularItems();
     res.json({
       success: true,
-      data: items,
+      data: addFullImagePath(req, items),
       count: items.length
     });
   } catch (error) {
@@ -120,7 +157,7 @@ app.get('/api/menu/search', (req, res) => {
     const items = searchMenuItems(searchTerm);
     res.json({
       success: true,
-      data: items,
+      data: addFullImagePath(req, items),
       count: items.length,
       searchTerm
     });
@@ -153,7 +190,7 @@ app.get('/api/menu/category/:category', (req, res) => {
     const items = getMenuItemsByCategory(category);
     res.json({
       success: true,
-      data: items,
+      data: addFullImagePath(req, items),
       count: items.length,
       category
     });
@@ -184,7 +221,7 @@ app.get('/api/menu/:id', (req, res) => {
     
     res.json({
       success: true,
-      data: item
+      data: addFullImagePath(req, item)
     });
   } catch (error) {
     console.error('Error fetching menu item:', error);
@@ -240,7 +277,7 @@ app.post('/api/menu', (req, res) => {
     
     res.status(201).json({
       success: true,
-      data: newItem,
+      data: addFullImagePath(req, newItem),
       message: 'Menu item created successfully'
     });
   } catch (error) {
@@ -307,7 +344,7 @@ app.put('/api/menu/:id', (req, res) => {
     
     res.json({
       success: true,
-      data: updatedItem,
+      data: addFullImagePath(req, updatedItem),
       message: 'Menu item updated successfully'
     });
   } catch (error) {
