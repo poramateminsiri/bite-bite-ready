@@ -1,0 +1,380 @@
+/**
+ * Express Server for Bite Bite Food Ordering App
+ * Provides REST API for menu items using SQLite database
+ */
+
+const express = require('express');
+const cors = require('cors');
+const { initializeDatabase } = require('./db/init');
+const { seedDatabase } = require('./db/seed');
+const {
+  getAllMenuItems,
+  getMenuItemById,
+  getMenuItemsByCategory,
+  getPopularItems,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  searchMenuItems
+} = require('./db/queries');
+
+// Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Initialize database on startup
+console.log('🚀 Initializing database...');
+try {
+  initializeDatabase();
+  seedDatabase();
+  console.log('✅ Database ready');
+} catch (error) {
+  console.error('❌ Failed to initialize database:', error);
+  process.exit(1);
+}
+
+// ==================== API ROUTES ====================
+
+/**
+ * Health check endpoint
+ */
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * GET /api/menu
+ * Get all menu items
+ */
+app.get('/api/menu', (req, res) => {
+  try {
+    const items = getAllMenuItems();
+    res.json({
+      success: true,
+      data: items,
+      count: items.length
+    });
+  } catch (error) {
+    console.error('Error fetching menu items:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch menu items'
+    });
+  }
+});
+
+/**
+ * GET /api/menu/popular
+ * Get popular menu items
+ */
+app.get('/api/menu/popular', (req, res) => {
+  try {
+    const items = getPopularItems();
+    res.json({
+      success: true,
+      data: items,
+      count: items.length
+    });
+  } catch (error) {
+    console.error('Error fetching popular items:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch popular items'
+    });
+  }
+});
+
+/**
+ * GET /api/menu/search?q=searchTerm
+ * Search menu items by name or description
+ */
+app.get('/api/menu/search', (req, res) => {
+  try {
+    const searchTerm = req.query.q;
+    
+    if (!searchTerm) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search term is required'
+      });
+    }
+    
+    const items = searchMenuItems(searchTerm);
+    res.json({
+      success: true,
+      data: items,
+      count: items.length,
+      searchTerm
+    });
+  } catch (error) {
+    console.error('Error searching menu items:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to search menu items'
+    });
+  }
+});
+
+/**
+ * GET /api/menu/category/:category
+ * Get menu items by category
+ */
+app.get('/api/menu/category/:category', (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    // Validate category
+    const validCategories = ['appetizer', 'main', 'dessert', 'drink'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid category. Must be: appetizer, main, dessert, or drink'
+      });
+    }
+    
+    const items = getMenuItemsByCategory(category);
+    res.json({
+      success: true,
+      data: items,
+      count: items.length,
+      category
+    });
+  } catch (error) {
+    console.error('Error fetching menu items by category:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch menu items by category'
+    });
+  }
+});
+
+/**
+ * GET /api/menu/:id
+ * Get menu item by ID
+ */
+app.get('/api/menu/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = getMenuItemById(id);
+    
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: 'Menu item not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: item
+    });
+  } catch (error) {
+    console.error('Error fetching menu item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch menu item'
+    });
+  }
+});
+
+/**
+ * POST /api/menu
+ * Create a new menu item
+ */
+app.post('/api/menu', (req, res) => {
+  try {
+    const { id, name, description, price, category, image, popular } = req.body;
+    
+    // Validate required fields
+    if (!id || !name || !description || price === undefined || !category || !image) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: id, name, description, price, category, image'
+      });
+    }
+    
+    // Validate category
+    const validCategories = ['appetizer', 'main', 'dessert', 'drink'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid category. Must be: appetizer, main, dessert, or drink'
+      });
+    }
+    
+    // Validate price
+    if (typeof price !== 'number' || price <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Price must be a positive number'
+      });
+    }
+    
+    const newItem = createMenuItem({
+      id,
+      name,
+      description,
+      price,
+      category,
+      image,
+      popular: popular ? 1 : 0
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: newItem,
+      message: 'Menu item created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating menu item:', error);
+    
+    // Check for unique constraint violation
+    if (error.message.includes('UNIQUE constraint')) {
+      return res.status(409).json({
+        success: false,
+        error: 'Menu item with this ID already exists'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create menu item'
+    });
+  }
+});
+
+/**
+ * PUT /api/menu/:id
+ * Update a menu item
+ */
+app.put('/api/menu/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // Validate category if provided
+    if (updates.category) {
+      const validCategories = ['appetizer', 'main', 'dessert', 'drink'];
+      if (!validCategories.includes(updates.category)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid category. Must be: appetizer, main, dessert, or drink'
+        });
+      }
+    }
+    
+    // Validate price if provided
+    if (updates.price !== undefined) {
+      if (typeof updates.price !== 'number' || updates.price <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Price must be a positive number'
+        });
+      }
+    }
+    
+    // Convert popular to integer if provided
+    if (updates.popular !== undefined) {
+      updates.popular = updates.popular ? 1 : 0;
+    }
+    
+    const updatedItem = updateMenuItem(id, updates);
+    
+    if (!updatedItem) {
+      return res.status(404).json({
+        success: false,
+        error: 'Menu item not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: updatedItem,
+      message: 'Menu item updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating menu item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update menu item'
+    });
+  }
+});
+
+/**
+ * DELETE /api/menu/:id
+ * Delete a menu item
+ */
+app.delete('/api/menu/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = deleteMenuItem(id);
+    
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Menu item not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Menu item deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting menu item:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete menu item'
+    });
+  }
+});
+
+// ==================== ERROR HANDLING ====================
+
+/**
+ * 404 handler for undefined routes
+ */
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found'
+  });
+});
+
+/**
+ * Global error handler
+ */
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error'
+  });
+});
+
+// ==================== START SERVER ====================
+
+app.listen(PORT, () => {
+  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📊 API endpoints available at http://localhost:${PORT}/api/menu`);
+  console.log(`💚 Health check: http://localhost:${PORT}/health\n`);
+});
