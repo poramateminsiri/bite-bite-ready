@@ -23,12 +23,13 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-// Allow multiple frontend origins for development
+// Allow multiple frontend origins for development and production
 const allowedOrigins = [
   'http://localhost:5173',  // Default Vite port
   'http://localhost:8080',  // Configured Vite port
   'http://localhost:8081',  // Alternative port
   'http://localhost:8082',  // Alternative port
+  'https://bite-bite-ready.vercel.app',  // Production Vercel deployment
   process.env.FRONTEND_URL  // Environment variable override
 ].filter(Boolean);
 
