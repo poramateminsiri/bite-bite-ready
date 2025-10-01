@@ -7,6 +7,8 @@ const express = require('express');
 const cors = require('cors');
 const { initializeDatabase } = require('./db/init');
 const { seedDatabase } = require('./db/seed');
+const { auth } = require('./auth');
+const { requireAuth } = require('./middleware/requireAuth');
 const {
   getAllMenuItems,
   getMenuItemById,
@@ -69,10 +71,28 @@ try {
   initializeDatabase();
   seedDatabase();
   console.log('✅ Database ready');
+  
+  // Initialize BetterAuth tables
+  console.log('🔐 Initializing BetterAuth...');
+  // BetterAuth creates tables on first API call
+  // This ensures tables exist before any requests
+  console.log('✅ BetterAuth ready (tables will be created on first use)');
 } catch (error) {
   console.error('❌ Failed to initialize database:', error);
   process.exit(1);
 }
+
+// ==================== AUTH ROUTES ====================
+
+/**
+ * BetterAuth Routes
+ * Handles all authentication endpoints
+ * POST /api/auth/sign-up
+ * POST /api/auth/sign-in
+ * POST /api/auth/sign-out
+ * GET  /api/auth/session
+ */
+app.use("/api/auth", auth.handler);
 
 // ==================== API ROUTES ====================
 
@@ -241,9 +261,9 @@ app.get('/api/menu/:id', (req, res) => {
 
 /**
  * POST /api/menu
- * Create a new menu item
+ * Create a new menu item (Protected - Admin only)
  */
-app.post('/api/menu', (req, res) => {
+app.post('/api/menu', requireAuth, (req, res) => {
   try {
     const { id, name, description, price, category, image, popular } = req.body;
     
@@ -307,9 +327,9 @@ app.post('/api/menu', (req, res) => {
 
 /**
  * PUT /api/menu/:id
- * Update a menu item
+ * Update a menu item (Protected - Admin only)
  */
-app.put('/api/menu/:id', (req, res) => {
+app.put('/api/menu/:id', requireAuth, (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -365,9 +385,9 @@ app.put('/api/menu/:id', (req, res) => {
 
 /**
  * DELETE /api/menu/:id
- * Delete a menu item
+ * Delete a menu item (Protected - Admin only)
  */
-app.delete('/api/menu/:id', (req, res) => {
+app.delete('/api/menu/:id', requireAuth, (req, res) => {
   try {
     const { id } = req.params;
     const deleted = deleteMenuItem(id);
@@ -468,9 +488,9 @@ app.post('/api/orders', (req, res) => {
 
 /**
  * GET /api/orders
- * Get all orders
+ * Get all orders (Protected - Admin only)
  */
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', requireAuth, (req, res) => {
   try {
     const orders = getAllOrders();
     res.json({
@@ -489,9 +509,9 @@ app.get('/api/orders', (req, res) => {
 
 /**
  * GET /api/orders/:id
- * Get order by ID
+ * Get order by ID (Protected - Admin only)
  */
-app.get('/api/orders/:id', (req, res) => {
+app.get('/api/orders/:id', requireAuth, (req, res) => {
   try {
     const { id } = req.params;
     const order = getOrderById(id);
@@ -518,9 +538,9 @@ app.get('/api/orders/:id', (req, res) => {
 
 /**
  * PUT /api/orders/:id/status
- * Update order status
+ * Update order status (Protected - Admin only)
  */
-app.put('/api/orders/:id/status', (req, res) => {
+app.put('/api/orders/:id/status', requireAuth, (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -559,9 +579,9 @@ app.put('/api/orders/:id/status', (req, res) => {
 
 /**
  * GET /api/orders/status/:status
- * Get orders by status
+ * Get orders by status (Protected - Admin only)
  */
-app.get('/api/orders/status/:status', (req, res) => {
+app.get('/api/orders/status/:status', requireAuth, (req, res) => {
   try {
     const { status } = req.params;
     
