@@ -22,6 +22,43 @@ const createMenuItemsIndexes = [
   'CREATE INDEX IF NOT EXISTS idx_popular ON menu_items(popular);'
 ];
 
+const createOrdersTable = `
+  CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT,
+    customer_address TEXT,
+    total_price REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')),
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`;
+
+const createOrderItemsTable = `
+  CREATE TABLE IF NOT EXISTS order_items (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    menu_item_id TEXT NOT NULL,
+    menu_item_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+  );
+`;
+
+const createOrdersIndexes = [
+  'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);',
+  'CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);'
+];
+
+const createOrderItemsIndexes = [
+  'CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);',
+  'CREATE INDEX IF NOT EXISTS idx_order_items_menu_item_id ON order_items(menu_item_id);'
+];
+
 /**
  * Initialize database schema
  * Creates all tables and indexes
@@ -33,11 +70,31 @@ function initializeSchema(db) {
     db.exec(createMenuItemsTable);
     console.log('✅ Created menu_items table');
 
-    // Create indexes
+    // Create indexes for menu_items
     createMenuItemsIndexes.forEach(indexSQL => {
       db.exec(indexSQL);
     });
     console.log('✅ Created indexes on menu_items table');
+
+    // Create orders table
+    db.exec(createOrdersTable);
+    console.log('✅ Created orders table');
+
+    // Create indexes for orders
+    createOrdersIndexes.forEach(indexSQL => {
+      db.exec(indexSQL);
+    });
+    console.log('✅ Created indexes on orders table');
+
+    // Create order_items table
+    db.exec(createOrderItemsTable);
+    console.log('✅ Created order_items table');
+
+    // Create indexes for order_items
+    createOrderItemsIndexes.forEach(indexSQL => {
+      db.exec(indexSQL);
+    });
+    console.log('✅ Created indexes on order_items table');
 
     return true;
   } catch (error) {
@@ -49,5 +106,9 @@ function initializeSchema(db) {
 module.exports = {
   initializeSchema,
   createMenuItemsTable,
-  createMenuItemsIndexes
+  createMenuItemsIndexes,
+  createOrdersTable,
+  createOrderItemsTable,
+  createOrdersIndexes,
+  createOrderItemsIndexes
 };

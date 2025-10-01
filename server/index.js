@@ -15,7 +15,12 @@ const {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
-  searchMenuItems
+  searchMenuItems,
+  createOrder,
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus,
+  getOrdersByStatus
 } = require('./db/queries');
 
 // Initialize Express app
@@ -383,6 +388,204 @@ app.delete('/api/menu/:id', (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete menu item'
+    });
+  }
+});
+
+// ==================== ORDER ROUTES ====================
+
+/**
+ * POST /api/orders
+ * Create a new order
+ */
+app.post('/api/orders', (req, res) => {
+  try {
+    const { customer_name, customer_phone, customer_address, items, notes } = req.body;
+    
+    // Validate required fields
+    if (!customer_name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer name is required'
+      });
+    }
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Order must contain at least one item'
+      });
+    }
+    
+    // Validate each item
+    for (const item of items) {
+      if (!item.menu_item_id || !item.menu_item_name || !item.quantity || !item.price) {
+        return res.status(400).json({
+          success: false,
+          error: 'Each item must have menu_item_id, menu_item_name, quantity, and price'
+        });
+      }
+      
+      if (item.quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Item quantity must be greater than 0'
+        });
+      }
+      
+      if (item.price <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Item price must be greater than 0'
+        });
+      }
+    }
+    
+    // Create order
+    const order = createOrder(
+      {
+        customer_name,
+        customer_phone,
+        customer_address,
+        notes
+      },
+      items
+    );
+    
+    res.status(201).json({
+      success: true,
+      data: order,
+      message: 'Order created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create order'
+    });
+  }
+});
+
+/**
+ * GET /api/orders
+ * Get all orders
+ */
+app.get('/api/orders', (req, res) => {
+  try {
+    const orders = getAllOrders();
+    res.json({
+      success: true,
+      data: orders,
+      count: orders.length
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch orders'
+    });
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * Get order by ID
+ */
+app.get('/api/orders/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = getOrderById(id);
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order'
+    });
+  }
+});
+
+/**
+ * PUT /api/orders/:id/status
+ * Update order status
+ */
+app.put('/api/orders/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    // Validate status
+    const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be: pending, confirmed, preparing, ready, completed, or cancelled'
+      });
+    }
+    
+    const updatedOrder = updateOrderStatus(id, status);
+    
+    if (!updatedOrder) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: updatedOrder,
+      message: 'Order status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update order status'
+    });
+  }
+});
+
+/**
+ * GET /api/orders/status/:status
+ * Get orders by status
+ */
+app.get('/api/orders/status/:status', (req, res) => {
+  try {
+    const { status } = req.params;
+    
+    // Validate status
+    const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status. Must be: pending, confirmed, preparing, ready, completed, or cancelled'
+      });
+    }
+    
+    const orders = getOrdersByStatus(status);
+    res.json({
+      success: true,
+      data: orders,
+      count: orders.length,
+      status
+    });
+  } catch (error) {
+    console.error('Error fetching orders by status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch orders by status'
     });
   }
 });
