@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import type { CartItem } from "@/types/menu";
+import type { CartItem, OrderItemData } from "@/types/menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CheckoutForm } from "@/components/CheckoutForm";
+import { orderApi } from "@/services/api";
+import { toast } from "sonner";
 
 interface CartProps {
   isOpen: boolean;
@@ -10,11 +14,65 @@ interface CartProps {
   items: CartItem[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
+  onClearCart: () => void;
 }
 
-export const Cart = ({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartProps) => {
+export const Cart = ({ isOpen, onClose, items, onUpdateQuantity, onRemove, onClearCart }: CartProps) => {
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCheckoutClick = () => {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+    setIsCheckoutOpen(true);
+  };
+
+  const handleCheckoutSubmit = async (formData: {
+    customer_name: string;
+    customer_phone?: string;
+    customer_address?: string;
+    notes?: string;
+  }) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Convert cart items to order items format
+      const orderItems: OrderItemData[] = items.map((item) => ({
+        menu_item_id: item.id,
+        menu_item_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      // Submit order
+      const order = await orderApi.submitOrder({
+        customer_name: formData.customer_name,
+        customer_phone: formData.customer_phone,
+        customer_address: formData.customer_address,
+        items: orderItems,
+        notes: formData.notes,
+      });
+
+      // Success! Clear cart and close dialogs
+      toast.success(`Order placed successfully! Order ID: ${order.id}`, {
+        duration: 5000,
+      });
+      
+      onClearCart();
+      setIsCheckoutOpen(false);
+      onClose();
+    } catch (error) {
+      console.error("Failed to submit order:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to place order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -89,13 +147,26 @@ export const Cart = ({ isOpen, onClose, items, onUpdateQuantity, onRemove }: Car
                 <span>Total</span>
                 <span className="text-primary">${total.toFixed(2)}</span>
               </div>
-              <Button className="w-full" size="lg">
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={handleCheckoutClick}
+              >
                 Checkout
               </Button>
             </div>
           </div>
         )}
       </SheetContent>
+      
+      <CheckoutForm
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        cartItems={items}
+        cartTotal={total}
+        onSubmit={handleCheckoutSubmit}
+        isSubmitting={isSubmitting}
+      />
     </Sheet>
   );
 };

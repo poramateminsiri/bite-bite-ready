@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,22 @@ interface MenuItemProps {
 }
 
 export const MenuItem = ({ item, onAddToCart }: MenuItemProps) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/menu/${item.id}`);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click navigation
+    onAddToCart(item);
+  };
+
   return (
-    <Card className="overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-[var(--shadow-hover)] border-border/50">
+    <Card 
+      className="overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-[var(--shadow-hover)] border-border/50"
+      onClick={handleCardClick}
+    >
       <div className="relative h-48 overflow-hidden">
         <img
           src={item.image}
@@ -37,7 +52,7 @@ export const MenuItem = ({ item, onAddToCart }: MenuItemProps) => {
           </span>
           <Button
             size="sm"
-            onClick={() => onAddToCart(item)}
+            onClick={handleAddToCart}
             className="gap-1"
           >
             <Plus className="h-4 w-4" />

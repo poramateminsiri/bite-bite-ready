@@ -3,7 +3,7 @@
  * Centralized API configuration and functions for backend communication
  */
 
-import type { MenuItem } from "@/types/menu";
+import type { MenuItem, OrderSubmission, Order } from "@/types/menu";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -120,6 +120,55 @@ export const menuApi = {
   searchMenuItems: async (query: string): Promise<MenuItem[]> => {
     const response = await fetchApi<ApiResponse<MenuItem[]>>(
       `/api/menu/search?q=${encodeURIComponent(query)}`
+    );
+    return response.data;
+  },
+};
+
+/**
+ * Order API functions
+ */
+export const orderApi = {
+  /**
+   * Submit a new order
+   */
+  submitOrder: async (orderData: OrderSubmission): Promise<Order> => {
+    const response = await fetchApi<ApiResponse<Order>>("/api/orders", {
+      method: "POST",
+      body: JSON.stringify(orderData),
+    });
+    return response.data;
+  },
+
+  /**
+   * Get order by ID
+   */
+  getOrderById: async (id: string): Promise<Order> => {
+    const response = await fetchApi<ApiResponse<Order>>(`/api/orders/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Get all orders
+   */
+  getAllOrders: async (): Promise<Order[]> => {
+    const response = await fetchApi<ApiResponse<Order[]>>("/api/orders");
+    return response.data;
+  },
+
+  /**
+   * Update order status
+   */
+  updateOrderStatus: async (
+    id: string,
+    status: string
+  ): Promise<Order> => {
+    const response = await fetchApi<ApiResponse<Order>>(
+      `/api/orders/${id}/status`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      }
     );
     return response.data;
   },

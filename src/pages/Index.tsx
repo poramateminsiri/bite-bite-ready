@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { Hero } from "@/components/Hero";
 import { MenuItem } from "@/components/MenuItem";
-import { Cart } from "@/components/Cart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Loader2, AlertCircle } from "lucide-react";
@@ -14,14 +13,9 @@ const Index = () => {
   // Use context hooks
   const { menuItems, isLoading, isError, error } = useMenu();
   const {
-    cartItems,
     addToCart,
-    updateQuantity,
-    removeFromCart,
     cartItemCount,
-    isCartOpen,
     openCart,
-    closeCart,
   } = useCart();
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | "all">("all");
@@ -133,14 +127,6 @@ const Index = () => {
         )}
       </section>
 
-      {/* Cart Drawer */}
-      <Cart
-        isOpen={isCartOpen}
-        onClose={closeCart}
-        items={cartItems}
-        onUpdateQuantity={updateQuantity}
-        onRemove={removeFromCart}
-      />
     </div>
   );
 };

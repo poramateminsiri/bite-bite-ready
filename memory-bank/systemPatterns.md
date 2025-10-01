@@ -26,9 +26,10 @@
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
-- **Database**: SQLite for simplicity and file-based storage
+- **Database**: SQLite with better-sqlite3 for synchronous operations
 - **API Design**: RESTful endpoints with JSON responses
 - **Development**: Nodemon for auto-restart during development
+- **Transactions**: Database transactions for data integrity
 
 ## Design Patterns in Use
 
@@ -56,10 +57,15 @@ App
 ├── MenuProvider (Menu Context)
 ├── CartProvider (Cart Context)
 └── Router (React Router)
-    └── Index Page
-        ├── Hero Section
-        ├── Menu Display
-        └── Cart Sidebar
+    ├── Index Page
+    │   ├── Hero Section
+    │   ├── Menu Display (clickable cards)
+    │   └── Cart Sidebar
+    ├── MenuDetail Page
+    │   ├── Product Display
+    │   ├── Quantity Selector
+    │   └── Add to Cart
+    └── NotFound Page
 ```
 
 ### Context Dependencies
@@ -90,12 +96,25 @@ User Action → Component → Context → API → Database
 4. UI updates to reflect new cart state
 5. Changes persisted to localStorage
 
-### Order Placement
-1. User initiates order placement
-2. Cart data validated and formatted
-3. Order sent to backend API
-4. Backend processes and stores order
-5. Success/error feedback provided to user
+### Order Placement (Enhanced)
+1. User clicks checkout in cart
+2. CheckoutForm dialog opens with order summary
+3. User fills customer details with validation
+4. Form submission converts cart items to order format
+5. API request with transaction-based creation
+6. Database stores order and order_items atomically
+7. Success response with order ID
+8. Cart cleared and success notification shown
+9. User can continue shopping or view order
+
+### Menu Detail Navigation
+1. User clicks menu item card
+2. Navigate to `/menu/:id` route
+3. MenuDetail component extracts ID from URL
+4. Item fetched from MenuContext (no API call)
+5. Full product information displayed
+6. User selects quantity and adds to cart
+7. Back button or breadcrumb returns to menu
 
 ## File Organization Patterns
 
@@ -116,12 +135,15 @@ src/
 ### Backend Structure
 ```
 server/
-├── index.js            # Main server file
+├── index.js            # Main server file with API routes
+├── database.db         # SQLite database file
 ├── db/                 # Database related files
-│   ├── schema.js       # Database schema
-│   ├── queries.js      # Database operations
-│   └── seed.js         # Sample data
+│   ├── init.js         # Database initialization
+│   ├── schema.js       # Database schema (3 tables)
+│   ├── queries.js      # Database operations (CRUD)
+│   └── seed.js         # Sample data seeding
 └── public/             # Static assets
+    └── images/         # Food images
 ```
 
 ## Performance Considerations
@@ -129,3 +151,118 @@ server/
 - **Image Optimization**: Proper sizing and lazy loading of food images
 - **Caching**: React Query for API response caching
 - **Bundle Size**: Tree shaking and optimized dependencies
+- **Database Indexes**: Indexes on frequently queried columns
+- **WAL Mode**: Write-Ahead Logging for better concurrency
+- **Context Optimization**: Efficient re-renders with proper memoization
+- **Transaction Support**: Atomic operations for data integrity
+
+## New Patterns Established
+
+### Form Validation Pattern
+```typescript
+// Using react-hook-form + zod for type-safe validation
+const schema = z.object({
+  customer_name: z.string().min(2),
+  customer_phone: z.string().optional(),
+  // ... other fields
+});
+
+const form = useForm({
+  resolver: zodResolver(schema),
+  defaultValues: { ... }
+});
+```
+
+### Dynamic Routing Pattern
+```typescript
+// Route definition
+<Route path="/menu/:id" element={<MenuDetail />} />
+
+// Component usage
+const { id } = useParams<{ id: string }>();
+const menuItem = menuItems.find(item => item.id === id);
+```
+
+### Transaction Pattern (Backend)
+```javascript
+// Atomic operations for data integrity
+const insertOrder = db.transaction(() => {
+  // Insert order
+  orderStmt.run(orderData);
+  
+  // Insert order items
+  items.forEach(item => {
+    itemStmt.run(itemData);
+  });
+});
+
+insertOrder(); // Execute transaction
+```
+
+### Loading State Pattern
+```tsx
+// Skeleton loaders for better UX
+if (isLoading) {
+  return <Skeleton className="h-12 w-full" />;
+}
+```
+
+### Navigation Pattern
+```tsx
+// Clickable cards with event propagation control
+<Card onClick={() => navigate(`/menu/${item.id}`)}>
+  <Button onClick={(e) => {
+    e.stopPropagation(); // Prevent card navigation
+    onAddToCart(item);
+  }}>
+    Add to Cart
+  </Button>
+</Card>
+```
+
+### Order Submission Pattern
+```typescript
+// Convert cart items to order format
+const orderItems: OrderItemData[] = items.map(item => ({
+  menu_item_id: item.id,
+  menu_item_name: item.name,
+  quantity: item.quantity,
+  price: item.price
+}));
+
+// Submit with customer details
+await orderApi.submitOrder({
+  customer_name,
+  items: orderItems,
+  ...
+});
+```
+
+## Database Schema Patterns
+
+### Price Snapshot Pattern
+Store prices at time of order to prevent historical data inconsistencies:
+```sql
+CREATE TABLE order_items (
+  ...
+  price REAL NOT NULL,  -- Price at time of order
+  ...
+);
+```
+
+### Status Tracking Pattern
+Enum-like constraints for order status:
+```sql
+CREATE TABLE orders (
+  ...
+  status TEXT CHECK(status IN ('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')),
+  ...
+);
+```
+
+### Audit Trail Pattern
+Automatic timestamps for tracking:
+```sql
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+```
